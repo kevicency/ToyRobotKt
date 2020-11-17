@@ -3,11 +3,92 @@
  */
 package toyrobot
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.fail
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
+import kotlin.test.*
+
 
 class CommandTest {
+    @Test
+    fun `report command`() {
+        val robot = Robot(1, 2, Direction.NORTH)
+
+        val bo = ByteArrayOutputStream()
+        val out = PrintStream(bo)
+
+        ReportCommand(out).run(Simulation(Board(), robot))
+
+        bo.flush()
+
+        assertEquals(robot.stringify(), bo.toString().trim('\n'))
+    }
+
+    @Test
+    fun `left command`() {
+        val sut = Simulation(Board(), Robot(1, 1, Direction.NORTH))
+
+        LeftCommand.run(sut)
+
+        assertEquals(Direction.WEST, sut.robot?.facing)
+    }
+
+    @Test
+    fun `right command`() {
+        val sut = Simulation(Board(), Robot(1, 1, Direction.NORTH))
+
+        RightCommand.run(sut)
+
+        assertEquals(Direction.EAST, sut.robot?.facing)
+    }
+
+    @Test
+    fun `move command`() {
+        val sut = Simulation(Board(), Robot(1, 1, Direction.NORTH))
+
+        MoveCommand.run(sut)
+
+        assertEquals(Direction.NORTH, sut.robot?.facing)
+        assertEquals(Pair(1, 2), sut.robot?.position)
+    }
+
+    @Test
+    fun `invalid move command`() {
+        val sut = Simulation(Board(), Robot(0, 1, Direction.WEST))
+
+        MoveCommand.run(sut)
+
+        assertEquals(Direction.WEST, sut.robot?.facing)
+        assertEquals(Pair(0, 1), sut.robot?.position)
+    }
+
+    @Test
+    fun `place command`() {
+        val sut = Simulation(Board())
+
+        PlaceCommand(1, 2, Direction.NORTH).run(sut)
+
+        assertEquals(Direction.NORTH, sut.robot?.facing)
+        assertEquals(Pair(1, 2), sut.robot?.position)
+    }
+
+    @Test
+    fun `invalid place command`() {
+        val sut = Simulation(Board())
+
+        PlaceCommand(-1, 2, Direction.NORTH).run(sut)
+
+        assertNull(sut.robot)
+    }
+
+    @Test
+    fun `invalid (re-)place command`() {
+        val sut = Simulation(Board(), Robot(1, 2, Direction.NORTH))
+
+        PlaceCommand(-1, 2, Direction.NORTH).run(sut)
+
+        assertNotNull(sut.robot)
+        assertEquals(1, sut.robot?.position?.first)
+    }
 }
 
 class CommandParserTest {
@@ -38,7 +119,7 @@ class CommandParserTest {
         if (sut is PlaceCommand) {
             assertEquals(sut.x, 1)
             assertEquals(sut.y, 2)
-            assertEquals(sut.facing, Direction.NORTH)
+            assertEquals(sut.direction, Direction.NORTH)
         } else
             fail()
     }

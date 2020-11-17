@@ -6,7 +6,6 @@ package toyrobot
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.fail
 
 class CliTest {
@@ -16,22 +15,23 @@ class CliTest {
 
         sut.parse(listOf("-i"))
 
-        assert(sut.mode is InteractiveMode)
+        assert(sut.mode is InteractiveCliMode)
     }
 
     @Test
     fun `handles file option`() {
         val file = File.createTempFile("test", "txt").apply {
             deleteOnExit()
+            writeText("MOVE")
         }
 
-        val mode = Cli().run {
-            parse(listOf("-f", file.absolutePath))
-            mode
+        val mode = Cli().let {
+            it.parse(listOf("-f", file.absolutePath))
+            it.mode
         }
 
         when (mode) {
-            is FileMode -> assertEquals(mode.file.absolutePath, file.absolutePath)
+            is FileCliMode -> assertEquals(mode.lines, listOf("MOVE"))
             else -> fail()
         }
     }
